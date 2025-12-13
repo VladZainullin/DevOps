@@ -1,0 +1,62 @@
+name: "main"
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    ports:
+      - "8080:8080"
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: development
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: 123456
+      KC_DB_SCHEMA: sso
+      KC_DB_URL_DATABASE: store
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_PORT: 5432
+    depends_on:
+      - postgres
+    networks:
+      - postgres-keycloak-bridge
+    restart: no
+  
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres-keycloak-bridge
+    environment:
+      POSTGRES_DB: development
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    restart: no
+      
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: Secure123$
+    restart: no
+      
+networks:
+  postgres-keycloak-bridge:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:
+  keycloak_data:
