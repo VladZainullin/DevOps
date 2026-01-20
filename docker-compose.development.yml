@@ -10,11 +10,11 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_DB: development
+      KC_DB: keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: 123456
-      KC_DB_SCHEMA: sso
-      KC_DB_URL_DATABASE: store
+      KC_DB_SCHEMA: keycloak
+      KC_DB_URL_DATABASE: keycloak
       KC_DB_URL_HOST: postgres
       KC_DB_URL_PORT: 5432
     depends_on:
@@ -27,13 +27,15 @@ services:
     image: postgres:latest
     container_name: postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
+      - ./postgres/create-databases.sql:/docker-entrypoint-initdb.d/create-databases.sql
+      - ./postgres/create-schemas.sql:/docker-entrypoint-initdb.d/create-schemas.sql
     ports:
       - "5432:5432"
     networks:
       - postgres-keycloak-bridge
     environment:
-      POSTGRES_DB: development
+      POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123456
     restart: no
