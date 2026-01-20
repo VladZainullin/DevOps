@@ -10,7 +10,7 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_DB: keycloak
+      KC_DB: postgres
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: 123456
       KC_DB_SCHEMA: keycloak
