@@ -1,0 +1,2 @@
+\connect keycloak keycloak;
+CREATE SCHEMA IF NOT EXISTS keycloak AUTHORIZATION keycloak;
