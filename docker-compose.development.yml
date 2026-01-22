@@ -54,6 +54,19 @@ services:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: Secure123$
     restart: no
+    
+  rabbitmq:
+    image: rabbitmq:4.2.2-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=123456
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_logs:/var/log/rabbitmq
       
 networks:
   postgres-keycloak-bridge:
@@ -63,3 +76,5 @@ volumes:
   postgres_data:
   minio_data:
   keycloak_data:
+  rabbitmq_data:
+  rabbitmq_logs:
