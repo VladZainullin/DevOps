@@ -71,56 +71,53 @@ services:
   mimir:
     image: grafana/mimir:latest
     container_name: mimir
-    command: [ "-config.file=/etc/mimir/mimir.yaml" ]
-    volumes:
-      - ./mimir/mimir.yaml:/etc/mimir/mimir.yaml
     ports:
-      - "9009:9009"   # UI Mimir / API запросов Grafana
-    networks:
-      - observability
+      - "9009:9009"   # HTTP API
+      - "9095"        # gRPC (будет конфликтовать с Tempo, используем другой порт)
+    command: -config.file=/etc/mimir/config.yaml
+    volumes:
+      - ./mimir/mimir.yaml:/etc/mimir/config.yaml:ro
+      - mimir_data:/data
     restart: no
 
   tempo:
     image: grafana/tempo:latest
     container_name: tempo
-    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
     ports:
-        - "3200:3200"   # UI Tempo
+      - "3200:3200"   # HTTP
+      - "9095:9095"   # gRPC
+    command: -config.file=/etc/tempo/config.yaml
     volumes:
-      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml
-    networks:
-      - observability
+      - ./tempo/tempo.yaml:/etc/tempo/config.yaml:ro
+      - tempo_data:/tmp/tempo
     restart: no
 
   loki:
     image: grafana/loki:latest
     container_name: loki
-    command: -config.file=/etc/loki/loki.yaml
-    volumes:
-      - ./loki/loki.yaml:/etc/loki/loki.yaml
     ports:
-      - "3100:3100"   # UI Loki
-    networks:
-      - observability
-    restart: no
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+    restart: unless-stopped
   
   alloy:
     image: grafana/alloy:latest
     container_name: alloy
-    volumes:
-      - ./alloy/config.river:/etc/alloy/config.river
     ports:
-      - "4317:4317"
-      - "4318:4318"
-      - "12345:12345"
-    command: run /etc/alloy/config.river
-    networks:
-      - observability
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "12345:12345" # Alloy UI
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy /etc/alloy/config.alloy
+    restart: no
     depends_on:
-      - mimir
       - loki
       - tempo
-    restart: no
+      - mimir
 
   grafana:
     image: grafana/grafana:latest
@@ -128,15 +125,16 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-    networks:
-      - observability
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
     depends_on:
       - loki
       - tempo
       - mimir
-    restart: no
       
 networks:
   postgres-keycloak-bridge:
@@ -152,4 +150,8 @@ volumes:
   keycloak_data:
   rabbitmq_data:
   rabbitmq_logs:
+  loki_data:
+  tempo_data:
+  mimir_data:
   grafana_data:
+  alloy_data:
