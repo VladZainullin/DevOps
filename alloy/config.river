@@ -1,0 +1,57 @@
+﻿otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+}
+
+# === EXPORTERS ===
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+otelcol.exporter.prometheus_remote_write "mimir" {
+  endpoint {
+    url = "http://mimir:9009/api/v1/push"
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+# === PIPELINES ===
+
+otelcol.processor.batch "default" {}
+
+otelcol.service "default" {
+  pipelines {
+    traces = {
+      receivers  = [otelcol.receiver.otlp.default]
+      processors = [otelcol.processor.batch.default]
+      exporters  = [otelcol.exporter.otlp.tempo]
+    }
+
+    metrics = {
+      receivers  = [otelcol.receiver.otlp.default]
+      processors = [otelcol.processor.batch.default]
+      exporters  = [otelcol.exporter.prometheus_remote_write.mimir]
+    }
+
+    logs = {
+      receivers  = [otelcol.receiver.otlp.default]
+      processors = [otelcol.processor.batch.default]
+      exporters  = [loki.write.default]
+    }
+  }
+}

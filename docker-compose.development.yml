@@ -67,10 +67,84 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - rabbitmq_logs:/var/log/rabbitmq
+  
+  mimir:
+    image: grafana/mimir:latest
+    container_name: mimir
+    command: [ "-config.file=/etc/mimir/mimir.yaml" ]
+    volumes:
+      - ./mimir/mimir.yaml:/etc/mimir/mimir.yaml
+    ports:
+      - "9009:9009"   # UI Mimir / API запросов Grafana
+    networks:
+      - observability
+    restart: no
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
+    ports:
+        - "3200:3200"   # UI Tempo
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml
+    networks:
+      - observability
+    restart: no
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    command: -config.file=/etc/loki/loki.yaml
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/loki.yaml
+    ports:
+      - "3100:3100"   # UI Loki
+    networks:
+      - observability
+    restart: no
+  
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    volumes:
+      - ./alloy/config.river:/etc/alloy/config.river
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "12345:12345"
+    command: run /etc/alloy/config.river
+    networks:
+      - observability
+    depends_on:
+      - mimir
+      - loki
+      - tempo
+    restart: no
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    networks:
+      - observability
+    depends_on:
+      - loki
+      - tempo
+      - mimir
+    restart: no
       
 networks:
   postgres-keycloak-bridge:
     driver: bridge
+    name: postgres-keycloak-bridge
+  observability:
+    driver: bridge
+    name: observability
 
 volumes:
   postgres_data:
@@ -78,3 +152,4 @@ volumes:
   keycloak_data:
   rabbitmq_data:
   rabbitmq_logs:
+  grafana_data:
