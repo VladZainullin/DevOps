@@ -130,7 +130,7 @@ services:
     volumes:
       - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
       - grafana_data:/var/lib/grafana
-    restart: unless-stopped
+    restart: no
     depends_on:
       - loki
       - tempo
