@@ -128,7 +128,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
-      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources.yml:ro
       - grafana_data:/var/lib/grafana
     restart: no
     depends_on:
