@@ -40,7 +40,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123456
     restart: no
-      
+  
   minio:
     image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: minio
@@ -54,7 +54,7 @@ services:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: Secure123$
     restart: no
-    
+  
   rabbitmq:
     image: rabbitmq:4.2.2-management
     container_name: rabbitmq
@@ -67,82 +67,41 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - rabbitmq_logs:/var/log/rabbitmq
-  
-  mimir:
-    image: grafana/mimir:latest
-    container_name: mimir
-    ports:
-      - "9009:9009"   # HTTP API
-      - "9095"        # gRPC (будет конфликтовать с Tempo, используем другой порт)
-    command: -config.file=/etc/mimir/config.yaml
-    volumes:
-      - ./mimir/mimir.yaml:/etc/mimir/config.yaml:ro
-      - mimir_data:/data
-    restart: no
 
-  tempo:
-    image: grafana/tempo:latest
-    container_name: tempo
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    container_name: aspire-dashboard
     ports:
-      - "3200:3200"   # HTTP
-      - "9095:9095"   # gRPC
-    command: -config.file=/etc/tempo/config.yaml
-    volumes:
-      - ./tempo/tempo.yaml:/etc/tempo/config.yaml:ro
-      - tempo_data:/tmp/tempo
-    restart: no
-
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-    volumes:
-      - loki_data:/loki
-    restart: unless-stopped
-  
-  alloy:
-    image: grafana/alloy:latest
-    container_name: alloy
-    ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "12345:12345" # Alloy UI
-    volumes:
-      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - alloy_data:/var/lib/alloy
-    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy /etc/alloy/config.alloy
-    restart: no
-    depends_on:
-      - loki
-      - tempo
-      - mimir
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
+      - "18888:18888"   # gRPC endpoint for OTLP data
+      - "18889:18889"   # HTTP dashboard UI
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources.yml:ro
-      - grafana_data:/var/lib/grafana
+      - DOTNET_DASHBOARD_OTLP_ENDPOINT_URL=http://0.0.0.0:4387
     restart: no
-    depends_on:
-      - loki
-      - tempo
-      - mimir
-      
+    
+  valkey:
+    image: valkey/valkey:latest
+    container_name: valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    command: >
+      valkey-server
+      --appendonly yes
+      --save 60 1
+      --loglevel notice
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: no
+
 networks:
   postgres-keycloak-bridge:
     driver: bridge
     name: postgres-keycloak-bridge
-  observability:
-    driver: bridge
-    name: observability
 
 volumes:
   postgres_data:
@@ -150,8 +109,4 @@ volumes:
   keycloak_data:
   rabbitmq_data:
   rabbitmq_logs:
-  loki_data:
-  tempo_data:
-  mimir_data:
-  grafana_data:
-  alloy_data:
+  valkey_data:
