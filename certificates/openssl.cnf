@@ -6,20 +6,20 @@ distinguished_name = dn
 x509_extensions = v3_req
 
 [dn]
-C = CH
-ST = Zurich
-L = Zurich
-O = Local Development
+C = Russia
+ST = Arkhangelsk region
+L = Severodvinsk
+O = Odyssey of development
 OU = Development
-CN = ocr.vladislavzainullin.com
+CN = *.vladislavzainullin.com
 
 [v3_req]
-subjectAltName = @alt_names
 basicConstraints = critical, CA:FALSE
 keyUsage = critical, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
 
 [alt_names]
-DNS.1 = ocr.vladislavzainullin.com
-DNS.2 = localhost
+DNS.1 = *.vladislavzainullin.com
+DNS.2 = vladislavzainullin.com
 IP.1 = 127.0.0.1
